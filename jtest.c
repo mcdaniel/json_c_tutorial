@@ -9,6 +9,8 @@
 
 // Include Files
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <json-c/json.h>
 
 //
@@ -72,9 +74,12 @@ int json_parse( void ) {
 
     // Local variables
     json_object *jobj;
+    json_tokener *tok;
+    enum json_tokener_error jerr;
+    int i;
 
     // Define the JSON string
-    const char *js_str = "{ \
+    const char *js_str[2] = { "{ \
         \"firstname\": \"Patrick\", \
         \"lastname\": \"McDaniel\", \
         \"class\": \"cse311\", \
@@ -89,15 +94,32 @@ int json_parse( void ) {
             30, \
             40, \
         ], \
-    }";
+    }", 
+    "{ \"broken\": \"json\", \"badsyntax\" }" };
 
-    // Parse the JSON string
-    if ((jobj = json_tokener_parse(js_str)) == NULL) {
-        printf("Error parsing JSON string.\n\n %s\n", js_str);
+    // Parse the JSON string (easy version)
+    if ((jobj = json_tokener_parse(js_str[0])) == NULL) {
+       //  json_tokener_get_error
+        printf("Error parsing JSON string.\n\n %s\n", js_str[0]);
         return(-1);
     }
-    printf("Unparsed JSON: %s\n", js_str);
+    printf("Unparsed JSON: %s\n", js_str[0]);
     printf("Parsed JSON: %s\n", json_object_to_json_string(jobj));    
+
+    // Walk through the JSON objects (harder version)
+    for (i=0; i<2; i++) {
+        // Parse using tokenizer
+        tok = json_tokener_new();
+        jobj = json_tokener_parse_ex(tok, js_str[i], strlen(js_str[i]));
+        if (jobj == NULL) {
+                jerr = json_tokener_get_error(tok);
+                printf("Error parsing JSON string (errno %d),\n%s", jerr, json_tokener_error_desc(jerr));
+                return(-1);
+        }
+        printf("Tokenizer unparsed JSON: %s\n", js_str[i]);
+        printf("Tokenizer parsed JSON: %s\n", json_object_to_json_string(jobj));
+        json_tokener_free(tok);
+    }
 
     // Return successfully
     return(0);
