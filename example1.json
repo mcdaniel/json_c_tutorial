@@ -1,0 +1,16 @@
+{
+    "firstname": "Patrick",
+    "lastname": "McDaniel",
+    "class": "cse311",
+    "exam-dates": [
+        { "first": 511 },
+        { "second": true },
+        { "third": 0.99 }
+    ],
+    "student-ids" : [
+        10,
+        20,
+        30,
+        40
+    ]
+}

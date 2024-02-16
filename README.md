@@ -8,19 +8,19 @@ Note that there are many other functions that are part of the library that I am 
 
 This tutorial was created from the library documentation and random sources on the Internet as well as personal experimentation and trial and error.  Thanks to the many folks who contributed to the libjson-c library and the numerous helpful documents, pages and posts.
 
-**Patick McDaniel (mcdaniel@cs.wisc.edu), Jan 2024**
+**Patick McDaniel (mcdaniel@cs.wisc.edu), Feb 2024**
 
 ## JSON Format
 
-Before getting to the use of the library, lets do a quick review of JSON.  JSON is short for JavaScript Object Notation, which as you can see is in refernce to the JavaScript language from which it was lifted -- in fact, the approach was so simple and useful it is widely used in any number of applications and uses across the Internet and beyond.
+Before getting to the use of the library, lets do a quick review of JSON.  JSON is short for JavaScript Object Notation, which as you can see is in reference to the JavaScript language from which it was lifted -- in fact, the approach was so simple and useful it was widely adopted any number of applications and uses across the Internet and beyond.  In short, JSON has become a standard data format that all computer scientists and serious developers should be aware of.
 
-To the point, JSON is a general purpose data format widely used in modern computing systems, and now is used for everything from configurations to databases to AI datasets and much more.  The basic unit of data in JSON is a key/value pair, 
+To the point, JSON is a general purpose data format widely used in modern computing systems based entirely on the ASCII character set (although there is support for extended character sets for internationalization), and now is used for everything from configurations to databases to AI datasets and much more.  The basic unit of data in JSON is a key/value pair, 
 
     { "key":"value" }
 
 where the key is a string.  The value can be null, string, a number, a boolean, an array or and object.  Note that braces "{" and "}" serve as annotations to define the scope of an object.  In this case, there is just one key/value pair, but objects can be much more complex when they act as containers.
 
-There are two kinds of containers in JSON, arrays and the objects themeselves.  Arrays are lists of objects that are in a total order, and an object is a list of key/value pairs.  Note that objects can contain other objects and arrays, and arrays can contain other arrays and objects, etc.  Put more simply, objects and arrays can be arbitrarily nested.
+There are two kinds of containers in JSON, arrays and the objects themeselves.  Arrays are lists of objects that are in a total order, and an object is a list of key/value pairs.  Note that objects can contain other objects and arrays, and arrays can contain other arrays and objects, etc.  Put more simply, objects and arrays can be arbitrarily nested.  For example,
 
     {
         "firstname": "Patrick",
@@ -39,9 +39,9 @@ There are two kinds of containers in JSON, arrays and the objects themeselves.  
         ]
     }
 
-You can see here by this example that arrays contain lists of items which may either be base types (int, float, string, ...) or objects.  Also note that the last element of an array cannot have a trailing comma (I suppose to make parsing easier).
+You can see here by this example that arrays contain lists of items which may either be base types (int, float, string, ...) or objects.  Also note that the last element of an array cannot have a trailing comma (I suppose to make parsing easier).  If you inadvertently add the comment, the parser will error when trying to parse the text.
 
-Note that JSON, oddly, does not support comments (I suppose this is to save space and make parsing easier).  However, there is a convention that you can annotate an object with an comment by creating adding an additional field with the key "_comment".  For example, 
+Note that JSON, oddly, does not support comments (I suppose this is to save space and make parsing easier).  However, there is a convention that you can annotate an object with an comment by creating adding an additional object with the key "_comment".  For example, 
 
     {
         "_comment":"This is the comment for my object",
@@ -62,7 +62,7 @@ To link, you will need to add the link directives associated with the libraries.
 
 ## Basic concepts
 
-The central data structure/object around which JSON is programmed is the json_object.  Most of the time you have a root object from which all of the child objects are referenced, added to, etc.  The life-cycle of the process is that you (a) either create the objects by parsing a string/file containing JSON or you construct one by adding elements to it, (b) walk the elements and add/edit/extract data from the JSON tree, (c) serialize (or re-serialize) the JSON object, then free the objects (which can be done recursively).
+The central data structure/object around which JSON is programmed is the json_object.  Most of the time you have a root object from which all of the child objects are referenced, added to, etc.  Those of you who are familiar with other general-purpose data formats like XML will recognize this as the _root_ element.  The life-cycle of the process is that you (a) either create the objects by parsing a string/file containing JSON or you construct one by adding basic data typ0e elements to it, (b) walk the elements and add/edit/extract data from the JSON tree, (c) serialize (or re-serialize) the JSON object, then free the objects (which can be done recursively).
 
 One of the cool things about JSON-C is how it handles memory management.  The idea is that you can parse/allocate a huge tree ending up with a bunch of parent/child relationships.  However, when you free the tree it frees all of the child nodes automatically.  This avoids a lot of complexity in freeing code and can prevent memory leaks.  Of course, if you don't want it to delete a particular child node, you can prevent it from doing so (see [refcount](#reference-counting-and-memory-management) discussion below).
 
@@ -132,6 +132,9 @@ The way you construct an JSON file is to start with a root object, then add all 
 
 ## Reference counting and memory management
 
+As mentioned above, one of the cool features of the libarary is that the objects are memory referenced, meaning that once the last reference to an object is deleted, the underlying JSON object is freed.  This prevents memory leasks and makes the code much cleaner (you don't have to do complex recursive frees with the ubqitous hanging pointer problems that inevidably occur).  There are two basic functions you need to understand to work with the reference counting.
+
+1. **json_object_put** - This is the free function for the json objects, which does the recursive free for you (unless you have marked it not to delete--see next function).
 
 ----
 
