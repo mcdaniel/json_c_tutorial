@@ -16,62 +16,30 @@
 #include <json-c/json.h>
 
 //
+// Global test data, defines
+
+const char *JSON_EXAMPLES[2] = { "{ \
+        \"firstname\": \"Patrick\", \
+        \"lastname\": \"McDaniel\", \
+        \"class\": \"cse311\", \
+        \"exam-dates\": [ \
+            { \"first\": 511 }, \
+            { \"second\": true }, \
+            { \"third\": 0.99 }, \
+        ], \
+        \"student-ids\": [ \
+            10, \
+            20, \
+            30, \
+            40, \
+        ], \
+    }", 
+    "{ \"broken\": \"json\", \"badsyntax\" }" };
+
+#define filename "example1.json"
+
+//
 // Functions
-
-////////////////////////////////////////////////////////////////////////////////
-//
-// Function     : json_from_file
-// Description  : This function demostrates the creation of a JSON object 
-//                from a file
-//
-// Inputs       : filename - the name of the file to read
-// Outputs      : 0 if successful test, -1 if failure
-
-json_object * json_from_file( const char *filename ) {
-
-    // Local variables
-    FILE *fp;
-    char *js_str;
-    json_object *jobj;
-    struct stat st;
-
-    // Get the size of the file using stat
-    if (stat(filename, &st) != 0) {
-        printf("Error getting file size [%s].\n", filename);
-        return(NULL);
-    }
-    js_str = (char *)malloc(st.st_size+1);
-    js_str[st.st_size] = '\0';
-
-    // Open the file (assume this is an ASCII file, which it has to be for JSON)
-    if ( (fp = fopen(filename, "r")) == NULL ) {
-        printf("Error opening file [%s], %s.\n", filename, strerror(errno));
-        free(js_str);
-        return(NULL);
-    }
-
-    // Read the file into the string, close file
-    if (fread(js_str, st.st_size, 1, fp) != 1) {
-        printf("Error reading file [%s], incorrect read size.\n", filename);
-        free(js_str);
-        fclose(fp);
-        return(NULL);
-    }
-    fclose(fp);
-
-    // Parse the JSON string
-    if ((jobj = json_tokener_parse(js_str)) == NULL) {
-        printf("Error parsing JSON string.\n\n %s\n", js_str);
-        free(js_str);
-        return(NULL);
-    }
-    printf("Unparsed JSON file: \n%s\n\n", js_str);
-    printf("Parsed JSON file: \n%s\n\n", json_object_to_json_string(jobj));
-    free(js_str);
-
-    // Return successfully
-    return(jobj);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -136,39 +104,20 @@ int json_parse( void ) {
     enum json_tokener_error jerr;
     int i;
 
-    // Define the JSON string (second one will error on purpose)
-    const char *js_str[2] = { "{ \
-        \"firstname\": \"Patrick\", \
-        \"lastname\": \"McDaniel\", \
-        \"class\": \"cse311\", \
-        \"exam-dates\": [ \
-            { \"first\": 511 }, \
-            { \"second\": true }, \
-            { \"third\": 0.99 }, \
-        ], \
-        \"student-ids\": [ \
-            10, \
-            20, \
-            30, \
-            40, \
-        ], \
-    }", 
-    "{ \"broken\": \"json\", \"badsyntax\" }" };
-
     // Parse the JSON string (easy version)
-    if ((jobj = json_tokener_parse(js_str[0])) == NULL) {
+    if ((jobj = json_tokener_parse(JSON_EXAMPLES[0])) == NULL) {
        //  json_tokener_get_error
-        printf("Error parsing JSON string.\n\n %s\n", js_str[0]);
+        printf("Error parsing JSON string.\n\n %s\n", JSON_EXAMPLES[0]);
         return(-1);
     }
-    printf("Unparsed JSON: %s\n", js_str[0]);
+    printf("Unparsed JSON: %s\n", JSON_EXAMPLES[0]);
     printf("Parsed JSON: %s\n", json_object_to_json_string(jobj));    
 
     // Walk through the JSON objects (harder version)
     for (i=0; i<2; i++) {
         // Parse using tokenizer
         tok = json_tokener_new();
-        jobj = json_tokener_parse_ex(tok, js_str[i], strlen(js_str[i]));
+        jobj = json_tokener_parse_ex(tok, JSON_EXAMPLES[i], strlen(JSON_EXAMPLES[i]));
         if (jobj == NULL) {
                 jerr = json_tokener_get_error(tok);
                 printf("Error parsing JSON string (errno %d),\n%s\n\n", jerr, json_tokener_error_desc(jerr));
@@ -176,13 +125,99 @@ int json_parse( void ) {
                 json_object_put(jobj); // Clean up the object
                 return(-1);
         }
-        printf("Tokenizer unparsed JSON: %s\n", js_str[i]);
+        printf("Tokenizer unparsed JSON: %s\n", JSON_EXAMPLES[i]);
         printf("Tokenizer parsed JSON: %s\n", json_object_to_json_string(jobj));
+        printf("Tokenizer parsed JSON (pretty): %s\n", 
+                json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY));
         json_tokener_free(tok);
         json_object_put(jobj); // Clean up the object
     }
 
     // Return successfully
+    return(0);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Function     : json_process_object
+// Description  : Test search, add, delete, reference counting
+//
+// Inputs       : none
+// Outputs      : 0 if successful test, -1 if failure
+
+int json_process_object( void ) {
+
+    // Local variables
+    json_object *jobj, *tobj, *aobj;
+    int i;
+
+    // Parse the JSON string (easy version)
+    if ((jobj = json_tokener_parse(JSON_EXAMPLES[0])) == NULL) {
+       //  json_tokener_get_error
+        printf("Error parsing JSON string.\n\n %s\n", JSON_EXAMPLES[0]);
+        return(-1);
+    }
+
+    // Grab a couple of objects
+    if ( ((tobj = json_object_object_get(jobj, "student-ids")) == NULL) ||
+          ((aobj = json_object_array_get_idx(tobj, 2)) == NULL) ) {
+        printf("Error getting object from JSON.\n");
+        return(-1);
+    } 
+    printf("Got array object: %s\n", json_object_to_json_string(tobj));
+    printf("Got array element object: %s\n", json_object_to_json_string(aobj));
+    printf("\n");
+
+    // Note the funky syntax (key and value are defined within macro)
+    printf("Walking object ...\n");
+    json_object_object_foreach(jobj, key, value) {
+        printf("Found key: %s, value: %s\n", key, json_object_to_json_string(value));
+    }
+    printf("\n");
+
+    // Walk the array and print out the elements
+    printf("Walking array ...\n");
+    int len = json_object_array_length(tobj);
+    for (i=0; i<len; i++) {
+        aobj = json_object_array_get_idx(tobj, i);
+        printf("Array element %d: %s\n", i, json_object_to_json_string(aobj));
+    }
+    printf("\n");
+
+    // Add a new object to the array
+    json_object_put(jobj); // Clean up the object
+    return(0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Function     : json_file_operations
+// Description  : This function demostrates file operations
+//
+// Inputs       : none
+// Outputs      : 0 if successful test, -1 if failure
+
+int json_file_operations( void ) {
+
+    // Local variables
+    json_object *jobj;
+
+    // Read the file into a string
+    if ((jobj = json_object_from_file(filename)) == NULL) {
+        printf("Error reading JSON from file [%s].\n", filename);
+        return(-1);
+    }
+    printf("Parsed JSON file: \n%s\n\n", json_object_to_json_string(jobj));
+
+    // Write object into another file
+    if (json_object_to_file_ext("output.json", jobj, JSON_C_TO_STRING_PRETTY) == -1) {
+        printf("Error writing JSON to file.\n");
+        return(-1);
+    }
+    
+    // Cleanup, return successfully
+    json_object_put(jobj); // Clean up the object
     return(0);
 }
 
@@ -202,13 +237,8 @@ int main( void ) {
     // Do the JSON tests/demonstrations
     json_create();
     json_parse();
-
-    // Try some utility functions
-    if ( (jobj=json_from_file("example1.json")) == NULL ) {
-        printf("Error reading JSON from file.\n");
-        return(-1);
-    }
-    json_object_put(jobj); // Clean up the object
+    json_process_object();
+    json_file_operations();
 
     // Return successfully
     printf("JTest: successful.\n");

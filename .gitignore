@@ -54,3 +54,4 @@ dkms.conf
 # Local files
 jtest
 jtest.o
+output.json
