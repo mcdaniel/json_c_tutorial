@@ -138,7 +138,7 @@ The way you construct an JSON file is to start with a root object, then add all 
         iobj = json_object_new_int(412);
         aobj = json_object_new_array();
 
-    Note that in addition to string and int, there are new types for array, boolean, int64, double, and null.
+    Note that in addition to string and int, there are new types for array, boolean, int64, uint64, double, and null.
 
 3. **json_object_object_add()/json_object_array_add()** - These functions add new child objects to an existing object.  In the case of the array, it just adds another element to the array.
 
@@ -173,8 +173,15 @@ The way you construct an JSON file is to start with a root object, then add all 
 
         int len = json_object_array_length(obj);
         for (i=0; i<len; i++) {
-             json_object_array_get_idx
+             json_object_array_get_idx(obj, i);
         }
+
+5. **json_object_get_boolean()/json_object_get_int()/json_object_get_int64()/json_object_get_uint64()...** - Once you have an object, you can extract its type sensitive value from the string.  Here the value portion of the key/value part is coerced into the type of function you are interested in, i.e., the text is converted to whatever type you want, if it can be "3.14" would be converted into the float 3.14.
+
+        uint32_t val = json_get_object_int(i32obj);
+        const char *str = json_object_get_string(obj);
+
+    The supported types are: array, boolean, int, int64, uint64, double, and string, and null.
 
 ## Reference counting and memory management
 
@@ -196,17 +203,3 @@ As mentioned above, one of the cool features of the libarary is that the objects
 
         json_object *jobj = json_object_get(obj); // Take ownership of object
 
-----
-
-
-
-
-
-The primary type in json-c is json_object. It describes a reference counted tree of json objects which are created by either parsing text with a json_tokener (i.e. json_tokener_parse_ex()), or by creating (with json_object_new_object(), json_object_new_int(), etc...) and adding (with json_object_object_add(), json_object_array_add(), etc...) them individually. Typically, every object in the tree will have one reference, from its parent. When you are done with the tree of objects, you call json_object_put() on just the root object to free it, which recurses down through any child objects calling json_object_put() on each one of those in turn.
-
-You can get a reference to a single child (json_object_object_get() or json_object_array_get_idx()) and use that object as long as its parent is valid.
-If you need a child object to live longer than its parent, you can increment the child's refcount (json_object_get()) to allow it to survive the parent being freed or it being removed from its parent (json_object_object_del() or json_object_array_del_idx())
-
-When parsing text, the json_tokener object is independent from the json_object that it returns. It can be allocated (json_tokener_new()) used one or multiple times (json_tokener_parse_ex(), and freed (json_tokener_free()) while the json_object objects live on.
-
-A json_object tree can be serialized back into a string with json_object_to_json_string_ext(). The string that is returned is only valid until the next "to_json_string" call on that same object. Also, it is freed when the json_object is freed.
