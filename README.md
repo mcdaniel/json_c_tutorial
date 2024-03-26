@@ -180,8 +180,12 @@ The way you construct an JSON file is to start with a root object, then add all 
 
         uint32_t val = json_get_object_int(i32obj);
         const char *str = json_object_get_string(obj);
+        if ((val == 0) && (errno == EINVAL)) {
+            // Process error
+            fprintf(....)
+        }
 
-    The supported types are: array, boolean, int, int64, uint64, double, and string, and null.
+    The supported types are: array, boolean, int, int64, uint64, double, and string, and null.  Note that if the value cannot be coerced from the string, the function returns 0 (or some varient of type-specific zero) and sets errno top EINVAL.
 
 ## Reference counting and memory management
 
