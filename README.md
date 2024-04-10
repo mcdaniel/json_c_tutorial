@@ -156,6 +156,8 @@ The way you construct an JSON file is to start with a root object, then add all 
 
         tobj = json_object_object_get(jobj, "student-ids");
 
+    Note that there was a time when this function was deprecated and json_object_object_get_ex() was supposed to be used.  Deprecation was cancelled when folks realized that using the "ex" version changed code (and made the coder write more).  I find the non "ex" version to be cleaner and more intuitive, but your milage may vary.
+
 2. **json_object_array_get_idx()** -  This gets an element out of an array from a particular index.  Remember that JSON is zero-indexed, like most languages.
 
         aobj = json_object_array_get_idx(tobj, 2);  // Get third element
